@@ -6,20 +6,50 @@ import (
 	"time"
 )
 
-// _progressbar .
-func _progressbar() () {
-	r := NewReader()
+// pb .
+// output: Percent
+// progressbar1: 100% (10/10)
+// progressbar2: 100% (100/100)
+// progressbar3: 100% (1000/1000)
+//
+// output: Symbol
+// progressbar1: [==================================================] (10/10)
+// progressbar2: [==================================================] (100/100)
+// progressbar3: [==================================================] (1000/1000)
+func pb() () {
+	r := NewReader(Symbol())
+	// r := NewReader(
+	// 	Format(
+	// 		func(p *Progress) []byte {
+	// 			return nil
+	// 		},
+	// 	),
+	// )
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 
 	go func() {
-		var size uint = 100
+		var size uint = 10
 		p := r.NewProgress("progressbar1", size)
 
 		var i int
 		for i < int(size) {
-			p.Increment(1)
+			p.Incr(1)
+			<-time.After(500 * time.Millisecond)
+			i++
+		}
+
+		wg.Done()
+	}()
+
+	go func() {
+		var size uint = 100
+		p := r.NewProgress("progressbar2", size)
+
+		var i int
+		for i < int(size) {
+			p.Incr(1)
 			<-time.After(30 * time.Millisecond)
 			i++
 		}
@@ -29,11 +59,11 @@ func _progressbar() () {
 
 	go func() {
 		var size uint = 1000
-		p := r.NewProgress("progressbar2", size)
+		p := r.NewProgress("progressbar3", size)
 
 		var i int
 		for i < int(size) {
-			p.Increment(1)
+			p.Incr(1)
 			<-time.After(6 * time.Millisecond)
 			i++
 		}
@@ -44,11 +74,12 @@ func _progressbar() () {
 	wg.Wait()
 	r.Close()
 }
+
 func TestProgressbar(t *testing.T) {
-	_progressbar()
+	pb()
 }
 
-// BenchmarkProgressbar-16                1        6555312100 ns/op          570752 B/op      17462 allocs/op
+// BenchmarkProgressbar-16                1        6557205100 ns/op          419128 B/op      16515 allocs/op
 func BenchmarkProgressbar(b *testing.B) {
 	var bench = func(f func()) {
 		b.ResetTimer()
@@ -60,9 +91,7 @@ func BenchmarkProgressbar(b *testing.B) {
 
 	bench(
 		func() {
-			_progressbar()
+			pb()
 		},
 	)
-
-	// fmt.Println(time.Now().Format("2006-01-02 15:04:05.000"))
 }

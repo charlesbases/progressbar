@@ -3,15 +3,14 @@ package progressbar
 import (
 	"fmt"
 	"io"
+	"os"
 
-	"github.com/moby/term"
 	"github.com/morikuni/aec"
 )
 
 // stdout .
 func stdout() io.Writer {
-	_, out, _ := term.StdStreams()
-	return out
+	return os.Stdout
 }
 
 // clearline .
