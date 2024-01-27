@@ -17,6 +17,8 @@ type Reader struct {
 	format formatFunc
 
 	output io.Writer
+
+	closed chan struct{}
 }
 
 // NewReader .
@@ -27,6 +29,7 @@ func NewReader(opts ...option) *Reader {
 		ids:    make(map[string]int, 0),
 		format: Percent(), // default
 		output: stdout(),
+		closed: make(chan struct{}),
 	}
 	for _, opt := range opts {
 		opt.apply(r)
@@ -45,6 +48,7 @@ func (r *Reader) daemon() () {
 				r.display(p)
 				p.freed()
 			} else {
+				close(r.closed)
 				return
 			}
 		}
@@ -81,6 +85,14 @@ func (r *Reader) display(p *Progress) () {
 
 // NewProgress .
 func (r *Reader) NewProgress(id string, size uint) *Progress {
+	// print 0%
+	r.c <- newProgress(
+		func(p *Progress) {
+			p.id = id
+			p.size = size
+		},
+	)
+
 	return newProgress(
 		func(p *Progress) {
 			p.c = r.c
@@ -93,5 +105,7 @@ func (r *Reader) NewProgress(id string, size uint) *Progress {
 // Close .
 func (r *Reader) Close() () {
 	close(r.c)
+	// 等待所有进度条打印完成
+	<-r.closed
 	r = nil
 }
